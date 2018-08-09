@@ -1,1 +1,2 @@
 # fitnesshourglass2
+fitnesshourglass的无AsyncTask版本
