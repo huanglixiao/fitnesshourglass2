@@ -7,12 +7,18 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.fitnesshourglass2.android.Countdown.CountdownFragment;
 import com.fitnesshourglass2.android.Countdown.CountdownService;
 import com.fitnesshourglass2.android.SetTime.SetTimeFragment;
 
@@ -20,11 +26,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Button startButton;
 
+    private Button returnButton;
+
+    private Button setButton;
+
+    private TextView groupNumText;
+
     private SetTimeFragment setTimeFragment;
+
+    private CountdownFragment countdownFragment;
+
+    private CountdownService countdownService;
 
     public static final int UPDATE_REMAIN_TIME = 1;//更改剩余时间
 
     public static final int UPDATA_GROUP_COUT = 2;//更改组数
+
+    private boolean isRun;//倒计时是否开始
+
+    private boolean isPause;//是否在暂停状态;
+
+    private TimeSetted timeSetted;
 
     public static Handler handler;
 
@@ -46,13 +68,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        /**
-         *设定时间测试部分
-         */
-        setTimeFragment = (SetTimeFragment) getSupportFragmentManager().findFragmentById(R.id.part_set_time);
-        Log.d("RUSS","运行正常" );
+        timeSetted =new TimeSetted();
+        timeSetted.setGroupCouted(0);
+        isRun = false;
+        isPause = false;
+        countdownFragment = new CountdownFragment();
+        setTimeFragment = new SetTimeFragment();
+        replaceFragment(setTimeFragment);
+        groupNumText = (TextView) findViewById(R.id.text_group_num);
+        groupNumText.setText("第" + timeSetted.getGroupCouted() + "组");
         startButton = (Button) findViewById(R.id.button_start);
+        returnButton = (Button) findViewById(R.id.button_return);
         startButton.setOnClickListener(this);
+        returnButton.setOnClickListener(this);
         Intent intent = new Intent(this,CountdownService.class);
         startService(intent);
         bindService(intent,connection,BIND_AUTO_CREATE);
@@ -61,10 +89,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void handleMessage(Message msg) {
                 switch (msg.what){
                     case UPDATE_REMAIN_TIME:
-                        //timeTextView.setText("还剩" + countdownBinder.getRemainTime());
+                        countdownFragment.UpdateRemainTime(countdownBinder.getRemainTime());//更新剩余时间
                         break;
                     case UPDATA_GROUP_COUT:
-                        //timeTextView.setText("时间到了");
+                        //完成计时,组数加1
+                        isRun = false;
+                        timeSetted.addGroup();
+                        countdownFragment.UpdateRemainTime(0);
+                        groupNumText.setText("第" + timeSetted.getGroupCouted() + "组");
                         break;
                     default:
                         break;
@@ -81,7 +113,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         switch (view.getId()){
             case R.id.button_start:
-                Log.d("RUSS","时长"  + (int)setTimeFragment.getTotalTime() );
+                if (!isRun){
+                    //没开始倒计时
+                    timeSetted.setMinute(setTimeFragment.getTimeSetted().getMinute());
+                    timeSetted.setSecond(setTimeFragment.getTimeSetted().getSecond());
+                    if (timeSetted.getMinute() == 0 && timeSetted.getSecond()<3){
+                        Toast.makeText(this,"连3秒都没有？",Toast.LENGTH_SHORT).show();
+                    }else {
+                        replaceFragment(countdownFragment);
+                        countdownBinder.startCountdown(timeSetted.getTotalMill());
+                        isRun = true;
+                    }
+                }else if (isPause){
+                    countdownBinder.continueCountdown();//在暂停状态就继续;
+                    isPause = false;
+                }else {
+                    countdownBinder.pauseCountdown();//不在暂停状态就暂停
+                    isPause = true;
+                }
+                break;
+            case R.id.button_return:
+                if (isRun){
+                    countdownBinder.cancelCountdown();
+                    replaceFragment(setTimeFragment);//返回定时碎片
+                    isRun = false;
+                }else {
+                    //不运行时点击返回，组数清零;
+                    timeSetted.setGroupCouted(0);
+                    groupNumText.setText("第" + timeSetted.getGroupCouted() + "组");
+                }
                 break;
                 default:
                     break;
@@ -92,6 +152,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onDestroy() {
         super.onDestroy();
         unbindService(connection);
+    }
+
+    private void replaceFragment(Fragment fragment){
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.part_main,fragment);
+        transaction.commit();
     }
 
 }

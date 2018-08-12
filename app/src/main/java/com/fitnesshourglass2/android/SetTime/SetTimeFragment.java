@@ -26,7 +26,6 @@ public class SetTimeFragment extends Fragment {
 /*
     设定时间的碎片
 */
-
     private WheelView wheelView_min;
 
     private WheelView wheelView_second;
@@ -84,9 +83,8 @@ public class SetTimeFragment extends Fragment {
         });
     }
 
-    public long getTotalTime(){
-        Log.d("RUSS","运行正常" );
-        return timeSetted.getTotalMill();
+    public TimeSetted getTimeSetted(){
+        return timeSetted;
     }
 
 }

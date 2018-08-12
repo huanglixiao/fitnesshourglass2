@@ -130,7 +130,7 @@ public class CountdownService extends Service {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this,0,intent,0);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel("myChannal","whatever", NotificationManager.IMPORTANCE_HIGH);
+            NotificationChannel channel = new NotificationChannel("myChannal","whatever", NotificationManager.IMPORTANCE_DEFAULT);
             NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
             builder = new NotificationCompat.Builder(this,"myChannal");
@@ -147,8 +147,9 @@ public class CountdownService extends Service {
                 builder.setContentText("还剩" + remainMin + "分钟");
             }else {
                 builder.setContentText("还剩不到1分钟");
-                builder.setAutoCancel(true);
             }
+        }else{
+            builder.setPriority(Notification.PRIORITY_MAX);;
         }
         return builder.build();
     }
