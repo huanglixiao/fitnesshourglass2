@@ -1,5 +1,8 @@
 package com.fitnesshourglass2.android.SetTime;
 
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 
 import android.os.Build;
@@ -15,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.fitnesshourglass2.android.MainActivity;
 import com.fitnesshourglass2.android.R;
 import com.fitnesshourglass2.android.TimeSetted;
 
@@ -38,18 +42,21 @@ public class SetTimeFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         timeSetted = new TimeSetted();
+        timeSetted.setMinute(preferences.getInt("min",0));
+        timeSetted.setSecond(preferences.getInt("second",0));
         View view = inflater.inflate(R.layout.part_set_time,container,false);
         wheelView_min = view.findViewById(R.id.wheelview_min);
         wheelView_min.setTextSize(180);
         wheelView_min.setTextVerticalSpacing(1);
         wheelView_min.setVisibilityCount(5);
-        wheelView_min.setTextGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+        wheelView_min.setTextGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER);
         wheelView_min.setSelectedTextColor(ContextCompat.getColor(getContext(),R.color.colorAccent));
         wheelView_second = view.findViewById(R.id.wheelview_second);
         wheelView_second.setTextSize(180);
         wheelView_second.setVisibilityCount(5);
-        wheelView_second.setTextGravity(Gravity.CENTER_VERTICAL | Gravity.END);
+        wheelView_second.setTextGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER);
         wheelView_second.setSelectedTextColor(ContextCompat.getColor(getContext(),R.color.colorAccent));
         dataSources = new ArrayList<>();
         for (int i = 0; i < 60; i++) {
@@ -62,6 +69,8 @@ public class SetTimeFragment extends Fragment {
         }
         wheelView_second.setDataSources(dataSources);
         wheelView_min.setDataSources(dataSources);
+        wheelView_min.setSelectPosition(timeSetted.getMinute());
+        wheelView_second.setSelectPosition(timeSetted.getSecond());
         return view;
     }
 

@@ -5,7 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.BitmapFactory;
 import android.os.Binder;
 import android.os.Handler;
@@ -14,12 +17,17 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import com.fitnesshourglass2.android.MainActivity;
 import com.fitnesshourglass2.android.R;
 import com.fitnesshourglass2.android.TimeSetted;
 
 public class CountdownService extends Service {
+
+    private BroadcastReceiver overBroadcastReceiver;
+
+    private NotificationChannel channel;
 
     private static final int NOTICE_ID = 1;
 
@@ -30,6 +38,32 @@ public class CountdownService extends Service {
      private long mMillisUntilFinish;
 
      private CountdownBinder mBinder = new CountdownBinder();
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        overBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String intentAction =intent.getAction();
+                if (intentAction.equals("com.fitnesshourglass2.android.ACTION_CHECK")){
+                    Message message = new Message();
+                    message.what = MainActivity.MSG_CHECK;
+                    MainActivity.handler.sendMessage(message);
+                    stopForeground(true);
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.fitnesshourglass2.android.ACTION_CHECK");
+        registerReceiver(overBroadcastReceiver,filter);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(overBroadcastReceiver);
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -115,9 +149,8 @@ public class CountdownService extends Service {
         Message message = new Message();
         message.what = MainActivity.UPDATA_GROUP_COUT;
         MainActivity.handler.sendMessage(message);
-        Log.d(TAG,"Countdown finished");
         stopForeground(true);//关闭去前台，创建下载成功的通知
-        getNotificationManager().notify(NOTICE_ID,getNotification("计时结束",-1));
+        startForeground(NOTICE_ID,getNotification("计时结束",-1));
     }
 
     private NotificationManager getNotificationManager(){
@@ -125,12 +158,11 @@ public class CountdownService extends Service {
     }
 
     private Notification getNotification(String title, long progress){
-
         NotificationCompat.Builder builder = null;
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this,0,intent,0);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel("myChannal","whatever", NotificationManager.IMPORTANCE_DEFAULT);
+            channel = new NotificationChannel("myChannal","whatever", NotificationManager.IMPORTANCE_HIGH);
             NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
             builder = new NotificationCompat.Builder(this,"myChannal");
@@ -149,9 +181,18 @@ public class CountdownService extends Service {
                 builder.setContentText("还剩不到1分钟");
             }
         }else{
-            builder.setPriority(Notification.PRIORITY_MAX);;
+            builder.setFullScreenIntent(pi,true);
+            builder.setContent(getRemoteViews());
         }
         return builder.build();
+    }
+
+    private RemoteViews getRemoteViews(){
+        RemoteViews remoteViews = new RemoteViews(getPackageName(),R.layout.notification_over);
+        Intent intent = new Intent("com.fitnesshourglass2.android.ACTION_CHECK");
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.button_check,pendingIntent);
+        return remoteViews;
     }
 
 }
