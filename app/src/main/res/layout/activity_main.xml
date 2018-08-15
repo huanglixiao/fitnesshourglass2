@@ -2,9 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary">
 
     <FrameLayout
+        android:layout_marginTop="20dp"
         android:id="@+id/part_main"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -14,10 +16,14 @@
 
     <TextView
         android:id="@+id/text_group_num"
+        android:layout_gravity="center"
+        android:layout_marginTop="30dp"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:text="第0组"
+        android:text="已完成0组"
+        android:textSize="18sp"
+        android:textColor="@color/colorAccent"
         />
     
     <LinearLayout

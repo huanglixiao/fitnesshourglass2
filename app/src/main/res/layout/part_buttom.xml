@@ -3,36 +3,26 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:layout_gravity="bottom"
-    android:layout_marginBottom="20dp"
+    android:layout_marginBottom="60dp"
     >
 
     <Button
         android:id="@+id/button_return"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="10dp"
-        android:text="return"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="40dp"
+        android:background="@drawable/bg_return"
         />
 
     <Button
         android:id="@+id/button_start"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="10dp"
-        android:text="start"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="40dp"
+        android:background="@drawable/bg_start"
         />
 
-    <Button
-        android:id="@+id/button_set"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="10dp"
-        android:text="set"
-        />
 
 </LinearLayout>

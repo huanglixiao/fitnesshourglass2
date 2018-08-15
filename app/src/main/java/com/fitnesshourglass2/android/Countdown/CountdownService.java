@@ -10,11 +10,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -23,11 +25,11 @@ import com.fitnesshourglass2.android.MainActivity;
 import com.fitnesshourglass2.android.R;
 import com.fitnesshourglass2.android.TimeSetted;
 
+import java.io.File;
+
 public class CountdownService extends Service {
 
     private BroadcastReceiver overBroadcastReceiver;
-
-    private NotificationChannel channel;
 
     private static final int NOTICE_ID = 1;
 
@@ -37,11 +39,17 @@ public class CountdownService extends Service {
 
      private long mMillisUntilFinish;
 
+     private PowerManager powerManager;
+
+     private PowerManager.WakeLock PMWakeLock;
+
      private CountdownBinder mBinder = new CountdownBinder();
 
     @Override
     public void onCreate() {
         super.onCreate();
+        powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        PMWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,"RUSS");
         overBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -51,6 +59,7 @@ public class CountdownService extends Service {
                     message.what = MainActivity.MSG_CHECK;
                     MainActivity.handler.sendMessage(message);
                     stopForeground(true);
+                    PMWakeLock.release();
                 }
             }
         };
@@ -81,7 +90,7 @@ public class CountdownService extends Service {
                     timer = new Timer(mTotalTime, TimeSetted.SECOND_TO_MILL);
                     timer.start();
                     Log.d(TAG,"Countdown start");
-                    startForeground(NOTICE_ID,getNotification("计时器",mTotalTime));
+                    startForeground(NOTICE_ID,getNotification("组间休息",mTotalTime));
                     Looper.loop();
                 }
             }).start();
@@ -142,15 +151,16 @@ public class CountdownService extends Service {
         Message message = new Message();
         message.what = MainActivity.UPDATE_REMAIN_TIME;
         MainActivity.handler.sendMessage(message);
-        getNotificationManager().notify(NOTICE_ID,getNotification("计时器",mMillisUntilFinish));//更新通知栏
+        getNotificationManager().notify(NOTICE_ID,getNotification("组间休息",mMillisUntilFinish));//更新通知栏
     }
 
     private void onFinished(){
         Message message = new Message();
-        message.what = MainActivity.UPDATA_GROUP_COUT;
+        message.what = MainActivity.UPDATA_TIME_TO_ZERO;
         MainActivity.handler.sendMessage(message);
         stopForeground(true);//关闭去前台，创建下载成功的通知
         startForeground(NOTICE_ID,getNotification("计时结束",-1));
+        PMWakeLock.acquire();
     }
 
     private NotificationManager getNotificationManager(){
@@ -162,10 +172,19 @@ public class CountdownService extends Service {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this,0,intent,0);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            channel = new NotificationChannel("myChannal","whatever", NotificationManager.IMPORTANCE_HIGH);
+            NotificationChannel remainTimeChannel = new NotificationChannel("myChannal","remainTime",NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel checkChannel = new NotificationChannel("myChannal2","check",NotificationManager.IMPORTANCE_HIGH);
+            checkChannel.setSound(null,null);
+            checkChannel.enableVibration(true);
+            checkChannel.setVibrationPattern(new long[]{0,500,500});
             NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            manager.createNotificationChannel(channel);
-            builder = new NotificationCompat.Builder(this,"myChannal");
+            if (progress > 0){
+                manager.createNotificationChannel(remainTimeChannel);
+                builder = new NotificationCompat.Builder(this,"myChannal");
+            }else {
+                manager.createNotificationChannel(checkChannel);
+                builder = new NotificationCompat.Builder(this,"myChannal2");
+            }
         }else {
             builder = new NotificationCompat.Builder(this);
         }
@@ -180,11 +199,15 @@ public class CountdownService extends Service {
             }else {
                 builder.setContentText("还剩不到1分钟");
             }
+            return builder.build();
         }else{
-            builder.setFullScreenIntent(pi,true);
+            builder.setFullScreenIntent(pi,true)
+                    .setSound(null);
             builder.setContent(getRemoteViews());
+            Notification notification = builder.build();
+            notification.flags = Notification.FLAG_INSISTENT;
+            return notification;
         }
-        return builder.build();
     }
 
     private RemoteViews getRemoteViews(){

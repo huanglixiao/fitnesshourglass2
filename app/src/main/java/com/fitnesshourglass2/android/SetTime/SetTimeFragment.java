@@ -55,6 +55,7 @@ public class SetTimeFragment extends Fragment {
         wheelView_min.setSelectedTextColor(ContextCompat.getColor(getContext(),R.color.colorAccent));
         wheelView_second = view.findViewById(R.id.wheelview_second);
         wheelView_second.setTextSize(180);
+        wheelView_second.setTextVerticalSpacing(1);
         wheelView_second.setVisibilityCount(5);
         wheelView_second.setTextGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER);
         wheelView_second.setSelectedTextColor(ContextCompat.getColor(getContext(),R.color.colorAccent));
